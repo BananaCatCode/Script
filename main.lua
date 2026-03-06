@@ -4,10 +4,10 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Gem Blox Fruits Hub v8.4 - Keyless",
-   LoadingTitle = "Đang tải Gem Hub cho Lv 2224...",
-   LoadingSubtitle = "Cake Guard Farm Fix - No Loạn Item",
-   ConfigurationSaving = { Enabled = true, FolderName = "GemBFHubV8", FileName = "Config" }
+   Name = "Cats Hub - Pro",
+   LoadingTitle = "Đang tải Hub Farm",
+   LoadingSubtitle = "By Manh",
+   ConfigurationSaving = { Enabled = true, FolderName = "CatsHubV8", FileName = "Config" }
 })
 
 local Players = game:GetService("Players")
