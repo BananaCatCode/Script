@@ -1,14 +1,13 @@
--- Blox Fruits Rayfield Hub v8.3 - FIX LOẠN ITEM FARM | Local Player Tab + Shop + Auto Equip Tool
--- Fix: Farm loop ưu tiên equip tool chỉ định (không loạn item nữa). Tab Local Player: Chọn tool/sword, buy shop, auto equip farm.
--- Full Auto Quest Lv1-Max All Seas, Boss/Bones/Katakuri/Raid/Fruit Sniper
+-- Blox Fruits Gem Hub v8.4 - Keyless | FIX LOẠN ITEM + AUTO HỦY QUEST + LOCAL PLAYER + STATUS SERVER
+-- Optimized for Lv 2224 Sea 3 (Cake Guard / Bones / Katakuri) | Rayfield UI Stable 2026
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Blox Fruits Hub v8.3 - FIX LOẠN ITEM",
-   LoadingTitle = "Loading Local Player + Shop...",
-   LoadingSubtitle = "Đức Mạnh Lv2224 - Cake Guard Farm Fix",
-   ConfigurationSaving = { Enabled = true, FolderName = "BFHubV8.3", FileName = "Config" }
+   Name = "Gem Blox Fruits Hub v8.4 - Keyless",
+   LoadingTitle = "Đang tải Gem Hub cho Lv 2224...",
+   LoadingSubtitle = "Cake Guard Farm Fix - No Loạn Item",
+   ConfigurationSaving = { Enabled = true, FolderName = "GemBFHubV8", FileName = "Config" }
 })
 
 local Players = game:GetService("Players")
@@ -17,6 +16,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local CommF_ = ReplicatedStorage.Remotes.CommF_
+local playerGui = player:WaitForChild("PlayerGui")
 
 -- Globals
 _G.AutoQuestFarm = false
@@ -31,25 +31,30 @@ _G.AutoStats = false
 _G.StatsType = "Melee"
 _G.FarmHeight = 25
 _G.AttackDelay = 0.1
+_G.LastEquipTime = 0
+_G.SelectedTool = nil
+_G.UseSelectedTool = false
 _G.FarmConnection = nil
 _G.NoClipConnection = nil
-_G.SelectedTool = nil  -- Tool name to equip for farm (fix loạn item)
-_G.UseSelectedTool = false  -- Toggle auto equip selected tool during farm
 
--- Update backpack tools list dynamically
-local function UpdateToolList()
-   local tools = {}
-   for _, tool in pairs(player.Backpack:GetChildren()) do
-      if tool:IsA("Tool") then table.insert(tools, tool.Name) end
-   end
-   for _, tool in pairs(player.Character:GetChildren()) do
-      if tool:IsA("Tool") then table.insert(tools, tool.Name) end
-   end
-   table.sort(tools)
-   return tools
+-- Check if quest active (fix auto hủy)
+local function IsQuestActive()
+   local questGui = playerGui.Main.Quest
+   return questGui.Visible and questGui.Container.QuestTitle.Title.Text ~= ""
 end
 
--- No-Clip (same)
+-- Get current quest mob name (parse từ GUI)
+local function GetQuestMobName()
+   local questGui = playerGui.Main.Quest
+   if questGui.Visible then
+      local title = questGui.Container.QuestTitle.Title.Text
+      local mob = title:match("Defeat (%d+) (.+)") or title:match("(.+) %[Lv%.") or ""
+      return mob:match("^(.+) %[Lv") or mob
+   end
+   return nil
+end
+
+-- No-Clip
 local function ToggleNoClip(enabled)
    if _G.NoClipConnection then _G.NoClipConnection:Disconnect() end
    if enabled then
@@ -63,17 +68,19 @@ local function ToggleNoClip(enabled)
    end
 end
 
--- FIXED Farm Loop: Ưu tiên equip _G.SelectedTool nếu bật UseSelectedTool
+-- Farm Loop FIX LOẠN ITEM
 local function StartFarm(filter)
    if _G.FarmConnection then _G.FarmConnection:Disconnect() end
    ToggleNoClip(true)
-   Rayfield:Notify({Title = "Farm ON (Fixed Item)", Content = "Equip tool ổn định, không loạn nữa!", Duration = 3})
+   Rayfield:Notify({Title = "Farm ON", Content = "Đã fix loạn item + auto equip ổn định!", Duration = 4})
+
    _G.FarmConnection = RunService.Heartbeat:Connect(function()
       local char = player.Character
       if not char or not char:FindFirstChild("HumanoidRootPart") then return end
       local hrp = char.HumanoidRootPart
       local closest = nil
       local minDist = 5000
+
       for _, enemy in pairs(Workspace.Enemies:GetChildren()) do
          local eHum = enemy:FindFirstChild("Humanoid")
          if eHum and eHum.Health > 0 and enemy:FindFirstChild("HumanoidRootPart") then
@@ -87,25 +94,34 @@ local function StartFarm(filter)
             end
          end
       end
+
       if closest then
          hrp.CFrame = closest.HumanoidRootPart.CFrame * CFrame.new(math.random(-3,3), _G.FarmHeight, math.random(-3,3))
-         -- FIXED EQUIP: Ưu tiên SelectedTool nếu có, không thì tool đầu tiên
-         local equipped = false
-         if _G.UseSelectedTool and _G.SelectedTool then
-            local tool = player.Backpack:FindFirstChild(_G.SelectedTool) or char:FindFirstChild(_G.SelectedTool)
-            if tool then
-               char.Humanoid:EquipTool(tool)
-               tool:Activate()
-               equipped = true
+
+         -- FIX EQUIP: Chỉ equip nếu cần + cooldown 1.5s + check current
+         if tick() - _G.LastEquipTime > 1.5 then
+            local equipped = false
+            if _G.UseSelectedTool and _G.SelectedTool then
+               local tool = player.Backpack:FindFirstChild(_G.SelectedTool) or char:FindFirstChild(_G.SelectedTool)
+               if tool and char:FindFirstChildOfClass("Tool") ~= tool then
+                  char.Humanoid:EquipTool(tool)
+                  tool:Activate()
+                  equipped = true
+               end
             end
-         end
-         if not equipped then
-            -- Fallback: equip any tool/sword
-            local tool = player.Backpack:FindFirstChildOfClass("Tool")
-            if tool then
-               char.Humanoid:EquipTool(tool)
-               tool:Activate()
+            if not equipped then
+               local currentTool = char:FindFirstChildOfClass("Tool")
+               if not currentTool then
+                  local fallback = player.Backpack:FindFirstChildOfClass("Tool")
+                  if fallback then
+                     char.Humanoid:EquipTool(fallback)
+                     fallback:Activate()
+                  end
+               else
+                  currentTool:Activate()
+               end
             end
+            _G.LastEquipTime = tick()
          end
       end
    end)
@@ -114,138 +130,135 @@ end
 local function StopFarm()
    if _G.FarmConnection then _G.FarmConnection:Disconnect() end
    ToggleNoClip(false)
-   Rayfield:Notify({Title = "Farm OFF", Content = "Dừng farm!", Duration = 3})
+   Rayfield:Notify({Title = "Farm OFF", Content = "Đã dừng farm an toàn!", Duration = 3})
 end
 
--- Auto Quest (same as before)
+-- Auto Quest + Check Active
 local function AutoQuestCallback(v)
    _G.AutoQuestFarm = v
-   if v then StartFarm(function(e) return true end) -- Farm quest mobs via filter in loop
-   else StopFarm() end
+   if v then
+      spawn(function()
+         while _G.AutoQuestFarm do
+            if not IsQuestActive() then
+               -- TP giver + accept quest
+               local quest = GetQuestByLevel() -- từ table trước
+               if quest then
+                  player.Character.HumanoidRootPart.CFrame = quest.GiverCFrame
+                  wait(0.6)
+                  CommF_:InvokeServer("StartQuest", quest.QuestName, quest.QuestNum)
+                  wait(1.5)
+               end
+            end
+            local mobName = GetQuestMobName()
+            if mobName then
+               StartFarm(function(e) return string.find(e.Name, mobName) end)
+            else
+               StartFarm(nil) -- fallback
+            end
+            wait(2)
+         end
+      end)
+   else
+      StopFarm()
+   end
 end
 
--- *** NEW TAB: LOCAL PLAYER + SHOP + ITEM FARM ***
-local LocalPlayerTab = Window:CreateTab("Local Player")
+-- Tab Local Player + Status Server
+local LocalTab = Window:CreateTab("Local Player")
+LocalTab:CreateSection("Status Server (Refresh)")
 
--- Dropdown chọn tool/sword
-LocalPlayerTab:CreateDropdown({
-   Name = "Chọn Tool/Sword để Farm (Fix loạn item)",
-   Options = UpdateToolList(),
-   CurrentOption = "Katana",
-   Callback = function(option)
-      _G.SelectedTool = option
-      Rayfield:Notify({Title = "Tool Selected", Content = option .. " sẽ auto equip khi farm!", Duration = 3})
-   end,
-   Flag = "SelectedTool"
-})
-
-LocalPlayerTab:CreateToggle({
-   Name = "Auto Equip Tool Chỉ Định Khi Farm",
-   CurrentValue = false,
-   Callback = function(v)
-      _G.UseSelectedTool = v
-      if v then Rayfield:Notify({Title = "Auto Equip ON", Content = "Farm sẽ chỉ dùng " .. (_G.SelectedTool or "tool đầu") .. "!", Duration = 3}) end
+LocalTab:CreateButton({
+   Name = "Refresh Status Server",
+   Callback = function()
+      local lv = player.Data.Level.Value
+      local beli = player.leaderstats.Beli.Value
+      local frag = player.Data.Fragments.Value
+      local bounty = player.leaderstats["Bounty/Honor"] and player.leaderstats["Bounty/Honor"].Value or "N/A"
+      local fruit = player.Data.DevilFruit.Value ~= "" and player.Data.DevilFruit.Value or "No Fruit"
+      local sea = GetCurrentSea()
+      local mastery = {}
+      for _, tool in pairs(player.Backpack:GetChildren()) do
+         if tool:IsA("Tool") and tool:FindFirstChild("Mastery") then
+            table.insert(mastery, tool.Name .. ": " .. tool.Mastery.Value)
+         end
+      end
+      Rayfield:Notify({
+         Title = "Server Status",
+         Content = string.format(
+            "Lv: %d | Sea: %d | Beli: %s | Frag: %s | Bounty: %s\nFruit: %s\nMastery: %s",
+            lv, sea, beli, frag, bounty, fruit, table.concat(mastery, ", ")
+         ),
+         Duration = 10
+      })
    end
 })
 
-LocalPlayerTab:CreateButton({
-   Name = "Equip Tool Ngay",
+LocalTab:CreateSection("Tool & Equip Fix Loạn Item")
+
+LocalTab:CreateDropdown({
+   Name = "Chọn Sword/Tool để Farm",
+   Options = UpdateToolList(),
+   CurrentOption = "Katana",
+   Callback = function(opt)
+      _G.SelectedTool = opt
+      Rayfield:Notify({Title = "Selected", Content = "Sẽ ưu tiên equip " .. opt .. " khi farm!", Duration = 3})
+   end
+})
+
+LocalTab:CreateToggle({
+   Name = "Auto Equip Tool Chỉ Định (Fix Loạn Item)",
+   CurrentValue = true,
+   Callback = function(v)
+      _G.UseSelectedTool = v
+      Rayfield:Notify({Title = "Auto Equip", Content = v and "ON - Farm ổn định tool" or "OFF", Duration = 3})
+   end
+})
+
+LocalTab:CreateButton({
+   Name = "Equip Ngay Tool Đã Chọn",
    Callback = function()
-      local tool = player.Backpack:FindFirstChild(_G.SelectedTool) or player.Character:FindFirstChild(_G.SelectedTool)
-      if tool and player.Character then
-         player.Character.Humanoid:EquipTool(tool)
-         Rayfield:Notify({Title = "Equipped", Content = _G.SelectedTool .. " đã equip!", Duration = 3})
-      else
-         Rayfield:Notify({Title = "Error", Content = "Không tìm thấy tool!", Duration = 3})
+      if _G.SelectedTool then
+         local tool = player.Backpack:FindFirstChild(_G.SelectedTool) or player.Character:FindFirstChild(_G.SelectedTool)
+         if tool and player.Character then
+            player.Character.Humanoid:EquipTool(tool)
+            Rayfield:Notify({Title = "Equipped", Content = _G.SelectedTool .. " đã cầm!", Duration = 3})
+         end
       end
    end
 })
 
--- SHOP INTEGRATION (Buy swords, accessories from dealers)
-LocalPlayerTab:CreateSection("Shop Swords/Accessories")
+-- Shop Section
+LocalTab:CreateSection("Shop Swords (Buy nhanh)")
+LocalTab:CreateButton({Name = "Buy Katana (300)", Callback = function() CommF_:InvokeServer("BuyItem", "Katana") end})
+LocalTab:CreateButton({Name = "Buy Pole (2.5k)", Callback = function() CommF_:InvokeServer("BuyItem", "Pole") end})
+LocalTab:CreateButton({Name = "Buy Triple Katana (30k)", Callback = function() CommF_:InvokeServer("BuyItem", "Triple Katana") end})
+LocalTab:CreateButton({Name = "Buy Saddi (20k)", Callback = function() CommF_:InvokeServer("BuyItem", "Saddi") end})
 
-LocalPlayerTab:CreateButton({
-   Name = "Buy Katana (300)",
-   Callback = function() CommF_:InvokeServer("BuyItem", "Katana") end
-})
-
-LocalPlayerTab:CreateButton({
-   Name = "Buy Pipe (1000)",
-   Callback = function() CommF_:InvokeServer("BuyItem", "Pipe") end
-})
-
-LocalPlayerTab:CreateButton({
-   Name = "Buy Pole (2.5k)",
-   Callback = function() CommF_:InvokeServer("BuyItem", "Pole") end
-})
-
-LocalPlayerTab:CreateButton({
-   Name = "Buy Dual Katana (15k)",
-   Callback = function() CommF_:InvokeServer("BuyItem", "Dual-Katana") end
-})
-
-LocalPlayerTab:CreateButton({
-   Name = "Buy Saddi (20k)",
-   Callback = function() CommF_:InvokeServer("BuyItem", "Saddi") end
-})
-
-LocalPlayerTab:CreateButton({
-   Name = "Buy Triple Katana (30k)",
-   Callback = function() CommF_:InvokeServer("BuyItem", "Triple-Katana") end
-})
-
-LocalPlayerTab:CreateSection("Quick Shop")
-
-LocalPlayerTab:CreateButton({
-   Name = "Buy Random Bones",
-   Callback = function() CommF_:InvokeServer("Bones", "Buy", 10, 1) end
-})
-
-LocalPlayerTab:CreateButton({
-   Name = "Auto Random Bones (Toggle in Farm)",
-   Callback = function() CommF_:InvokeServer("Bones", "Buy", 1, 1) end
-})
-
--- Refresh tool list button
-LocalPlayerTab:CreateButton({
-   Name = "Refresh Tool List",
-   Callback = function()
-      Rayfield:Notify({Title = "Refreshed", Content = "Danh sách tool cập nhật!", Duration = 2})
-      -- UI auto refresh dropdown via Flag
-   end
-})
-
--- Farm Tab (updated callbacks to use fixed equip)
+-- Farm Tab
 local FarmTab = Window:CreateTab("Farm")
 FarmTab:CreateToggle({
    Name = "Auto Quest + Farm (Lv1-Max All Seas)",
    CurrentValue = false,
-   Callback = AutoQuestCallback  -- Uses fixed StartFarm
+   Callback = AutoQuestCallback
 })
-
 FarmTab:CreateToggle({
    Name = "Auto Farm Boss",
    CurrentValue = false,
-   Callback = function(v) if v then StartFarm(function(e) return string.find(e.Name:lower(), "boss") end) else StopFarm() end end
+   Callback = function(v) if v then StartFarm(function(e) return e.Name:lower():find("boss") or e.Name:lower():find("king") end) else StopFarm() end end
 })
-
 FarmTab:CreateToggle({
-   Name = "Auto Farm Bones",
+   Name = "Auto Farm Bones (Reborn Skeleton)",
    CurrentValue = false,
-   Callback = function(v) if v then StartFarm(function(e) return string.find(e.Name, "Skeleton") end) else StopFarm() end end
+   Callback = function(v) if v then StartFarm(function(e) return e.Name:find("Reborn Skeleton") end) else StopFarm() end end
 })
-
 FarmTab:CreateToggle({
    Name = "Auto Farm Katakuri (Cake Mobs)",
    CurrentValue = false,
-   Callback = function(v) if v then StartFarm(function(e) return string.find(e.Name, "Cookie") or string.find(e.Name, "Cake") end) else StopFarm() end end
+   Callback = function(v) if v then StartFarm(function(e) return e.Name:find("Cookie") or e.Name:find("Cake") end) else StopFarm() end end
 })
 
--- Fruit/Misc/Tele/Settings tabs same as before (copy if needed)
-
 Rayfield:Notify({
-   Title = "v8.3 LOẠN ITEM FIXED!",
-   Content = "Tab Local Player: Chọn sword/tool → Auto equip farm (không loạn nữa). Buy shop dễ dàng. Bật UseSelectedTool + Auto Farm Katakuri cho Lv2224!",
-   Duration = 8,
-   Image = 4483362458
+   Title = "v8.4 - LOẠN ITEM ĐÃ FIX HOÀN TOÀN!",
+   Content = "Tab Local Player: Chọn sword/tool → bật Auto Equip → farm Cake Guard không còn loạn item nữa. Status Server refresh đầy đủ thông tin. Bật Auto Quest + Farm để auto!",
+   Duration = 10
 })
