@@ -1,10 +1,10 @@
--- Dark Transparent UI - Fix Hide Hoàn Toàn + Icon Draggable + Ctrl Hide
--- Hide: Thu nhỏ + di chuyển về icon + fade out 100% + Visible = false (không lộ)
--- Show: Expand từ vị trí icon hiện tại
+-- Dark Transparent UI - Rainbow Border (đường viền cầu vồng chuyển động)
+-- Icon draggable + Hide thu vào icon + Ctrl hide + Rainbow border
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local pg = player:WaitForChild("PlayerGui")
@@ -40,8 +40,20 @@ iconCorner.CornerRadius = UDim.new(1, 0)
 
 local iconStroke = Instance.new("UIStroke", icon)
 iconStroke.Color = Color3.fromRGB(100, 100, 200)
-iconStroke.Thickness = 2
-iconStroke.Transparency = 0.4
+iconStroke.Thickness = 2.5
+iconStroke.Transparency = 0.3
+
+-- Rainbow gradient cho icon stroke (tùy chọn, nhẹ nhàng)
+local iconGradient = Instance.new("UIGradient", iconStroke)
+iconGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+    ColorSequenceKeypoint.new(0.2, Color3.fromRGB(255, 165, 0)),
+    ColorSequenceKeypoint.new(0.4, Color3.fromRGB(0, 255, 0)),
+    ColorSequenceKeypoint.new(0.6, Color3.fromRGB(0, 255, 255)),
+    ColorSequenceKeypoint.new(0.8, Color3.fromRGB(0, 0, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 255))
+}
+iconGradient.Rotation = 0
 
 -- MAIN FRAME
 local mf = Instance.new("Frame")
@@ -59,19 +71,34 @@ mf.Parent = sg
 local mfCorner = Instance.new("UICorner", mf)
 mfCorner.CornerRadius = UDim.new(0, 18)
 
-local mfStroke = Instance.new("UIStroke", mf)
-mfStroke.Color = Color3.fromRGB(90, 90, 140)
-mfStroke.Thickness = 2.5
-mfStroke.Transparency = 0.35
+-- Rainbow border chính (UIStroke + UIGradient)
+local rainbowStroke = Instance.new("UIStroke")
+rainbowStroke.Name = "RainbowBorder"
+rainbowStroke.Thickness = 3.5
+rainbowStroke.Transparency = 0.1
+rainbowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+rainbowStroke.LineJoinMode = Enum.LineJoinMode.Round
+rainbowStroke.Parent = mf
 
-local grad = Instance.new("UIGradient", mf)
-grad.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 30, 50)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 25))
+local rainbowGradient = Instance.new("UIGradient")
+rainbowGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+    ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 165, 0)),
+    ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255, 255, 0)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 0)),
+    ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 255, 255)),
+    ColorSequenceKeypoint.new(0.83, Color3.fromRGB(0, 0, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 255))
 }
-grad.Rotation = 45
+rainbowGradient.Rotation = 0
+rainbowGradient.Parent = rainbowStroke
 
--- Title + Close + Content (giữ nguyên như cũ, chỉ paste ngắn gọn)
+-- Hiệu ứng xoay rainbow (chuyển động chậm)
+RunService.Heartbeat:Connect(function(delta)
+    rainbowGradient.Rotation = (rainbowGradient.Rotation + delta * 30) % 360  -- Xoay 30 độ/giây
+end)
+
+-- Title, Close, Content (giữ nguyên)
 local title = Instance.new("TextLabel", mf)
 title.Size = UDim2.new(1, -60, 0.1, 0)
 title.Position = UDim2.new(0, 20, 0, 15)
@@ -80,6 +107,7 @@ title.Text = "Dark Transparent UI"
 title.TextColor3 = Color3.fromRGB(240, 240, 255)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBlack
+title.TextStrokeTransparency = 0.75
 
 local close = Instance.new("TextButton", mf)
 close.Size = UDim2.new(0, 45, 0, 45)
@@ -99,14 +127,14 @@ local cont = Instance.new("TextLabel", mf)
 cont.Size = UDim2.new(1, -40, 0.75, -80)
 cont.Position = UDim2.new(0, 20, 0, 70)
 cont.BackgroundTransparency = 1
-cont.Text = "UI dark transparent\n\n• Icon ⋮ draggable\n• Click icon: Toggle thu/expand\n• Ctrl: Hide (thu vào icon, ẩn hẳn)\n• U: Toggle\n• X: Đóng vĩnh viễn"
+cont.Text = "UI dark transparent + Rainbow Border!\n\n• Border cầu vồng chuyển động nhẹ.\n• Icon ⋮ draggable\n• Click icon: Toggle thu/expand\n• Ctrl: Hide hẳn (thu vào icon)\n• U: Toggle\n• X: Đóng vĩnh viễn"
 cont.TextColor3 = Color3.fromRGB(210, 210, 230)
 cont.TextSize = 19
 cont.Font = Enum.Font.Gotham
 cont.TextWrapped = true
 cont.TextYAlignment = Enum.TextYAlignment.Top
 
--- Anim
+-- Anim info
 local animInfo = TweenInfo.new(0.55, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut)
 
 local isShowing = true
@@ -117,16 +145,15 @@ local function hideUI()
     local iconAbsPos = icon.AbsolutePosition
     local iconAbsSize = icon.AbsoluteSize
     
-    -- Thu nhỏ về icon + fade out + ẩn hẳn
     TweenService:Create(mf, animInfo, {
         Size = UDim2.new(0, iconAbsSize.X * 0.8, 0, iconAbsSize.Y * 0.8),
         Position = UDim2.new(0, iconAbsPos.X + iconAbsSize.X/2 - (iconAbsSize.X * 0.4), 0, iconAbsPos.Y + iconAbsSize.Y/2 - (iconAbsSize.Y * 0.4)),
         BackgroundTransparency = 1,
-        Rotation = 15  -- Hiệu ứng xoay nhẹ cho đẹp
+        Rotation = 15
     }):Play()
     
     task.delay(0.55, function()
-        mf.Visible = false  -- Ẩn hoàn toàn, không lộ nữa
+        mf.Visible = false
         mf.Rotation = 0
     end)
     
@@ -139,12 +166,12 @@ local function showUI()
     mf.Visible = true
     mf.Rotation = 0
     mf.BackgroundTransparency = 1
-    mf.Size = UDim2.new(0, 100, 0, 100)  -- Bắt đầu nhỏ từ icon
-    mf.Position = icon.Position  -- Bắt đầu từ vị trí icon hiện tại
+    mf.Size = UDim2.new(0, 100, 0, 100)
+    mf.Position = icon.Position
     
     TweenService:Create(mf, animInfo, {
         Size = UDim2.new(0.38, 0, 0.55, 0),
-        Position = UDim2.new(icon.Position.X.Scale + 0.05, icon.Position.X.Offset + 60, icon.Position.Y.Scale + 0.05, icon.Position.Y.Offset + 60),  -- Mở rộng gần icon
+        Position = UDim2.new(icon.Position.X.Scale + 0.05, icon.Position.X.Offset + 60, icon.Position.Y.Scale + 0.05, icon.Position.Y.Offset + 60),
         BackgroundTransparency = 0.32
     }):Play()
     
@@ -159,10 +186,8 @@ local function toggleUI()
     end
 end
 
--- Click icon toggle
 icon.MouseButton1Click:Connect(toggleUI)
 
--- Hover icon
 icon.MouseEnter:Connect(function()
     TweenService:Create(icon, TweenInfo.new(0.2), {Size = UDim2.new(0, 52, 0, 52)}):Play()
 end)
@@ -170,7 +195,6 @@ icon.MouseLeave:Connect(function()
     TweenService:Create(icon, TweenInfo.new(0.2), {Size = UDim2.new(0, 45, 0, 45)}):Play()
 end)
 
--- Close
 close.MouseButton1Click:Connect(function()
     hideUI()
     task.delay(0.6, function()
@@ -178,7 +202,6 @@ close.MouseButton1Click:Connect(function()
     end)
 end)
 
--- Phím Ctrl: Chỉ hide (thu vào icon + ẩn hẳn)
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
@@ -190,8 +213,4 @@ UserInputService.InputBegan:Connect(function(input, gp)
     end
 end)
 
--- Auto show lần đầu
-task.wait(0.3)
--- mf.Visible = true  -- Đã show sẵn
-
-print("Dark UI fixed! Ctrl để hide hẳn (thu vào icon + ẩn), click icon để toggle, U toggle.")
+print("Dark UI + Rainbow Border loaded! Border cầu vồng chuyển động, Ctrl để hide hẳn.")
