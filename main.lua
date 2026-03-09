@@ -1,9 +1,6 @@
--- Dark Transparent UI - Icon Draggable + Hiệu ứng Thu Vào Icon + Phím Ctrl Toggle Hide
--- Icon ⋮: Draggable khắp màn hình, click để toggle (show/expand hoặc hide/thu UI vào icon)
--- Nút X: Đóng vĩnh viễn
--- Phím Ctrl (Left/Right): Toggle hide với hiệu ứng thu vào icon
--- Phím U: Giữ nguyên toggle đơn giản (fallback)
--- Transparent thật + Main frame draggable
+-- Dark Transparent UI - Fix Hide Hoàn Toàn + Icon Draggable + Ctrl Hide
+-- Hide: Thu nhỏ + di chuyển về icon + fade out 100% + Visible = false (không lộ)
+-- Show: Expand từ vị trí icon hiện tại
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -12,7 +9,6 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local pg = player:WaitForChild("PlayerGui")
 
--- Xóa UI cũ
 if pg:FindFirstChild("DarkTransparentUI") then
     pg.DarkTransparentUI:Destroy()
 end
@@ -24,11 +20,11 @@ sg.IgnoreGuiInset = true
 sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 sg.Parent = pg
 
--- ICON (draggable, đại diện, thay đổi theo trạng thái)
+-- ICON (draggable)
 local icon = Instance.new("TextButton")
 icon.Name = "IconToggle"
-icon.Size = UDim2.new(0, 40, 0, 40)  -- Size mặc định (khi show)
-icon.Position = UDim2.new(1, -55, 1, -60)
+icon.Size = UDim2.new(0, 45, 0, 45)
+icon.Position = UDim2.new(1, -60, 1, -70)
 icon.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 icon.Text = "⋮"
 icon.TextColor3 = Color3.fromRGB(180, 180, 255)
@@ -36,7 +32,7 @@ icon.TextScaled = true
 icon.Font = Enum.Font.GothamBold
 icon.ZIndex = 1500
 icon.Active = true
-icon.Draggable = true  -- Làm draggable, di chuyển khắp màn hình!
+icon.Draggable = true
 icon.Parent = sg
 
 local iconCorner = Instance.new("UICorner", icon)
@@ -47,7 +43,7 @@ iconStroke.Color = Color3.fromRGB(100, 100, 200)
 iconStroke.Thickness = 2
 iconStroke.Transparency = 0.4
 
--- MAIN FRAME (transparent, draggable)
+-- MAIN FRAME
 local mf = Instance.new("Frame")
 mf.Name = "MainFrame"
 mf.Size = UDim2.new(0.38, 0, 0.55, 0)
@@ -75,7 +71,7 @@ grad.Color = ColorSequence.new{
 }
 grad.Rotation = 45
 
--- Title
+-- Title + Close + Content (giữ nguyên như cũ, chỉ paste ngắn gọn)
 local title = Instance.new("TextLabel", mf)
 title.Size = UDim2.new(1, -60, 0.1, 0)
 title.Position = UDim2.new(0, 20, 0, 15)
@@ -84,11 +80,8 @@ title.Text = "Dark Transparent UI"
 title.TextColor3 = Color3.fromRGB(240, 240, 255)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBlack
-title.TextStrokeTransparency = 0.75
 
--- Nút X
 local close = Instance.new("TextButton", mf)
-close.Name = "Close"
 close.Size = UDim2.new(0, 45, 0, 45)
 close.Position = UDim2.new(1, -55, 0, 10)
 close.BackgroundColor3 = Color3.fromRGB(210, 40, 40)
@@ -98,120 +91,107 @@ close.TextScaled = true
 close.Font = Enum.Font.GothamBold
 close.ZIndex = 1200
 close.Active = true
-close.Parent = mf
 
 local clCorner = Instance.new("UICorner", close)
 clCorner.CornerRadius = UDim.new(0, 12)
 
--- Content
 local cont = Instance.new("TextLabel", mf)
 cont.Size = UDim2.new(1, -40, 0.75, -80)
 cont.Position = UDim2.new(0, 20, 0, 70)
 cont.BackgroundTransparency = 1
-cont.Text = "UI dark theme với transparent!\n\n• Icon ⋮ draggable khắp màn hình.\n• Click icon: Toggle với hiệu ứng thu/expand vào icon.\n• Phím Ctrl: Toggle hide (thu vào icon).\n• U: Toggle đơn giản.\n• Kéo icon/main frame được.\n• Nhấn X đóng hết."
+cont.Text = "UI dark transparent\n\n• Icon ⋮ draggable\n• Click icon: Toggle thu/expand\n• Ctrl: Hide (thu vào icon, ẩn hẳn)\n• U: Toggle\n• X: Đóng vĩnh viễn"
 cont.TextColor3 = Color3.fromRGB(210, 210, 230)
 cont.TextSize = 19
 cont.Font = Enum.Font.Gotham
 cont.TextWrapped = true
 cont.TextYAlignment = Enum.TextYAlignment.Top
 
--- Tween info
-local animInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut)
+-- Anim
+local animInfo = TweenInfo.new(0.55, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut)
 
--- Trạng thái: true = show
-local isShowing = true  -- Bắt đầu show
+local isShowing = true
 
-local function toggleHide(onlyHide)
-    if isShowing or onlyHide then
-        -- Thu UI vào icon: Scale nhỏ, di chuyển về vị trí icon, fade out
-        local iconPos = icon.AbsolutePosition
-        local iconSize = icon.AbsoluteSize
-        TweenService:Create(mf, animInfo, {
-            Size = UDim2.new(0, iconSize.X, 0, iconSize.Y),
-            Position = UDim2.new(0, iconPos.X, 0, iconPos.Y),
-            BackgroundTransparency = 1
-        }):Play()
-        -- Icon to (nổi bật khi UI thu vào)
-        TweenService:Create(icon, animInfo, {
-            Size = UDim2.new(0, 50, 0, 50),
-            BackgroundColor3 = Color3.fromRGB(50, 50, 70),
-            TextColor3 = Color3.fromRGB(220, 220, 255)
-        }):Play()
-        isShowing = false
+local function hideUI()
+    if not isShowing then return end
+    
+    local iconAbsPos = icon.AbsolutePosition
+    local iconAbsSize = icon.AbsoluteSize
+    
+    -- Thu nhỏ về icon + fade out + ẩn hẳn
+    TweenService:Create(mf, animInfo, {
+        Size = UDim2.new(0, iconAbsSize.X * 0.8, 0, iconAbsSize.Y * 0.8),
+        Position = UDim2.new(0, iconAbsPos.X + iconAbsSize.X/2 - (iconAbsSize.X * 0.4), 0, iconAbsPos.Y + iconAbsSize.Y/2 - (iconAbsSize.Y * 0.4)),
+        BackgroundTransparency = 1,
+        Rotation = 15  -- Hiệu ứng xoay nhẹ cho đẹp
+    }):Play()
+    
+    task.delay(0.55, function()
+        mf.Visible = false  -- Ẩn hoàn toàn, không lộ nữa
+        mf.Rotation = 0
+    end)
+    
+    isShowing = false
+end
+
+local function showUI()
+    if isShowing then return end
+    
+    mf.Visible = true
+    mf.Rotation = 0
+    mf.BackgroundTransparency = 1
+    mf.Size = UDim2.new(0, 100, 0, 100)  -- Bắt đầu nhỏ từ icon
+    mf.Position = icon.Position  -- Bắt đầu từ vị trí icon hiện tại
+    
+    TweenService:Create(mf, animInfo, {
+        Size = UDim2.new(0.38, 0, 0.55, 0),
+        Position = UDim2.new(icon.Position.X.Scale + 0.05, icon.Position.X.Offset + 60, icon.Position.Y.Scale + 0.05, icon.Position.Y.Offset + 60),  -- Mở rộng gần icon
+        BackgroundTransparency = 0.32
+    }):Play()
+    
+    isShowing = true
+end
+
+local function toggleUI()
+    if isShowing then
+        hideUI()
     else
-        -- Expand UI từ icon: Scale to, di chuyển về vị trí gốc, fade in
-        mf.BackgroundTransparency = 1
-        mf.Size = icon.Size
-        mf.Position = icon.Position
-        TweenService:Create(mf, animInfo, {
-            Size = UDim2.new(0.38, 0, 0.55, 0),
-            Position = UDim2.new(0.31, 0, 0.225, 0),  -- Vị trí gốc, hoặc chỉnh thành gần icon nếu muốn
-            BackgroundTransparency = 0.32
-        }):Play()
-        -- Icon bé lại (khi UI expand)
-        TweenService:Create(icon, animInfo, {
-            Size = UDim2.new(0, 35, 0, 35),
-            BackgroundColor3 = Color3.fromRGB(35, 35, 45),
-            TextColor3 = Color3.fromRGB(180, 180, 255)
-        }):Play()
-        isShowing = true
+        showUI()
     end
 end
 
--- Click icon: Toggle với hiệu ứng thu/expand
-icon.MouseButton1Click:Connect(function()
-    toggleHide(false)
-end)
+-- Click icon toggle
+icon.MouseButton1Click:Connect(toggleUI)
 
 -- Hover icon
 icon.MouseEnter:Connect(function()
-    local targetSize = isShowing and UDim2.new(0, 40, 0, 40) or UDim2.new(0, 55, 0, 55)
-    TweenService:Create(icon, TweenInfo.new(0.2), {Size = targetSize}):Play()
+    TweenService:Create(icon, TweenInfo.new(0.2), {Size = UDim2.new(0, 52, 0, 52)}):Play()
 end)
 icon.MouseLeave:Connect(function()
-    local targetSize = isShowing and UDim2.new(0, 35, 0, 35) or UDim2.new(0, 50, 0, 50)
-    TweenService:Create(icon, TweenInfo.new(0.2), {Size = targetSize}):Play()
+    TweenService:Create(icon, TweenInfo.new(0.2), {Size = UDim2.new(0, 45, 0, 45)}):Play()
 end)
 
--- Hover close
-close.MouseEnter:Connect(function()
-    TweenService:Create(close, TweenInfo.new(0.2), {
-        BackgroundColor3 = Color3.fromRGB(255, 60, 60),
-        Size = UDim2.new(0, 50, 0, 50)
-    }):Play()
-end)
-close.MouseLeave:Connect(function()
-    TweenService:Create(close, TweenInfo.new(0.2), {
-        BackgroundColor3 = Color3.fromRGB(210, 40, 40),
-        Size = UDim2.new(0, 45, 0, 45)
-    }):Play()
-end)
-
--- Nút X: Thu vào rồi destroy
+-- Close
 close.MouseButton1Click:Connect(function()
-    toggleHide(true)  -- Thu vào trước
-    task.wait(0.6)
-    sg:Destroy()
+    hideUI()
+    task.delay(0.6, function()
+        sg:Destroy()
+    end)
 end)
 
--- Phím Ctrl: Toggle hide với hiệu ứng thu vào icon
-local ctrlPressed = false
-UserInputService.InputBegan:Connect(function(input, processed)
-    if processed then return end
+-- Phím Ctrl: Chỉ hide (thu vào icon + ẩn hẳn)
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
     if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
-        ctrlPressed = true
-        toggleHide(true)  -- Chỉ hide với hiệu ứng thu
+        hideUI()
     elseif input.KeyCode == Enum.KeyCode.U then
-        toggleHide(false)  -- Toggle đầy đủ
+        toggleUI()
     elseif input.KeyCode == Enum.KeyCode.C then
         sg:Destroy()
     end
 end)
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
-        ctrlPressed = false
-    end
-end)
+-- Auto show lần đầu
+task.wait(0.3)
+-- mf.Visible = true  -- Đã show sẵn
 
-print("Dark UI updated! Icon draggable, click/ctrl để thu/expand, U toggle, C close.")
+print("Dark UI fixed! Ctrl để hide hẳn (thu vào icon + ẩn), click icon để toggle, U toggle.")
