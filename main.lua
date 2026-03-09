@@ -1,6 +1,5 @@
--- Dark Transparent UI - Fix Bug Hide/Show (restore position) + Border Ăn Khớp Bo Góc + Fix Tiêu Đề Chèn
--- Features Fly, Noclip, Inf Jump, God, Speed + Settings
--- Rainbow border xoay mượt
+-- Dark Transparent UI - Fix Hide/Show Bug + Icon Top Right + Square UI + Rainbow Border
+-- Icon mặc định góc trên phải, border vuông ăn khớp, rainbow xoay rõ
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -8,80 +7,83 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
-local pg = player:WaitForChild("PlayerGui")
+local playerGui = player:WaitForChild("PlayerGui")
 
-if pg:FindFirstChild("DarkTransparentUI") then
-    pg.DarkTransparentUI:Destroy()
+-- Xóa UI cũ
+if playerGui:FindFirstChild("DarkTransparentUI") then
+    playerGui.DarkTransparentUI:Destroy()
 end
 
-local sg = Instance.new("ScreenGui")
-sg.Name = "DarkTransparentUI"
-sg.ResetOnSpawn = false
-sg.IgnoreGuiInset = true
-sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-sg.Parent = pg
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "DarkTransparentUI"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = playerGui
 
--- ICON (draggable)
-local icon = Instance.new("TextButton")
-icon.Name = "IconToggle"
-icon.Size = UDim2.new(0, 45, 0, 45)
-icon.Position = UDim2.new(1, -60, 1, -70)
-icon.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-icon.Text = "⋮"
-icon.TextColor3 = Color3.fromRGB(180, 180, 255)
-icon.TextScaled = true
-icon.Font = Enum.Font.GothamBold
-icon.ZIndex = 1500
-icon.Active = true
-icon.Draggable = true
-icon.Parent = sg
+-- ICON TOGGLE (góc trên phải mặc định)
+local toggleIcon = Instance.new("TextButton")
+toggleIcon.Name = "ToggleIcon"
+toggleIcon.Size = UDim2.new(0, 50, 0, 50)
+toggleIcon.Position = UDim2.new(1, -60, 0, 60)  -- Góc trên phải
+toggleIcon.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+toggleIcon.Text = "⋮⋮⋮"
+toggleIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleIcon.TextScaled = true
+toggleIcon.Font = Enum.Font.GothamBold
+toggleIcon.Active = true
+toggleIcon.ZIndex = 999
+toggleIcon.Parent = screenGui
 
-local iconCorner = Instance.new("UICorner", icon)
-iconCorner.CornerRadius = UDim.new(1, 0)
+local iconCorner = Instance.new("UICorner")
+iconCorner.CornerRadius = UDim.new(0, 0)  -- Vuông để khớp UI
+iconCorner.Parent = toggleIcon
 
-local iconStroke = Instance.new("UIStroke", icon)
-iconStroke.Thickness = 2.5
-iconStroke.Transparency = 0.2
+local iconStroke = Instance.new("UIStroke")
 iconStroke.Color = Color3.new(1,1,1)
-iconStroke.Parent = icon
+iconStroke.Thickness = 3
+iconStroke.Transparency = 0
+iconStroke.Parent = toggleIcon
 
 local iconGradient = Instance.new("UIGradient", iconStroke)
 iconGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255,0,0)),
-    ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255,165,0)),
-    ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255,255,0)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0,255,0)),
-    ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0,255,255)),
-    ColorSequenceKeypoint.new(0.83, Color3.fromRGB(0,0,255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(255,0,255))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+    ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 165, 0)),
+    ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255, 255, 0)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 0)),
+    ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 255, 255)),
+    ColorSequenceKeypoint.new(0.83, Color3.fromRGB(0, 0, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 255))
 }
 iconGradient.Rotation = 0
 
--- MAIN FRAME
-local mf = Instance.new("Frame")
-mf.Name = "MainFrame"
-mf.Size = UDim2.new(0.4, 0, 0.6, 0)
-mf.Position = UDim2.new(0.3, 0, 0.2, 0)
-mf.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
-mf.BackgroundTransparency = 0.32
-mf.BorderSizePixel = 0
-mf.Active = true
-mf.Draggable = true
-mf.ZIndex = 500
-mf.Parent = sg
+-- MAIN FRAME (vuông, không bo góc)
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0.42, 0, 0.52, 0)
+mainFrame.Position = UDim2.new(0.29, 0, 0.24, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+mainFrame.BorderSizePixel = 0
+mainFrame.BackgroundTransparency = 1  -- Ẩn ban đầu
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.ZIndex = 100
+mainFrame.Parent = screenGui
 
-local mfCorner = Instance.new("UICorner", mf)
-mfCorner.CornerRadius = UDim.new(0, 18)  -- Bo góc iOS style, border sẽ theo
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 0)  -- Vuông hoàn toàn
+mainCorner.Parent = mainFrame
 
-local rainbowStroke = Instance.new("UIStroke")
-rainbowStroke.Thickness = 4.5
-rainbowStroke.Transparency = 0
-rainbowStroke.Color = Color3.new(1,1,1)
-rainbowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-rainbowStroke.LineJoinMode = Enum.LineJoinMode.Round
-rainbowStroke.Parent = mf
+-- Rainbow border (ăn khớp vuông)
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Thickness = 4
+mainStroke.Transparency = 0
+mainStroke.Color = Color3.new(1,1,1)
+mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+mainStroke.LineJoinMode = Enum.LineJoinMode.Miter  -- Vuông cạnh
+mainStroke.Parent = mainFrame
 
-local rainbowGradient = Instance.new("UIGradient")
+local rainbowGradient = Instance.new("UIGradient", mainStroke)
 rainbowGradient.Color = ColorSequence.new{
     ColorSequenceKeypoint.new(0, Color3.fromRGB(255,0,0)),
     ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255,165,0)),
@@ -92,198 +94,139 @@ rainbowGradient.Color = ColorSequence.new{
     ColorSequenceKeypoint.new(1, Color3.fromRGB(255,0,255))
 }
 rainbowGradient.Rotation = 0
-rainbowGradient.Parent = rainbowStroke
 
+-- Xoay rainbow mượt
 RunService.RenderStepped:Connect(function(delta)
-    rainbowGradient.Rotation = (rainbowGradient.Rotation + delta * 45) % 360
-    iconGradient.Rotation = (iconGradient.Rotation + delta * 45) % 360
+    rainbowGradient.Rotation = (rainbowGradient.Rotation + delta * 60) % 360  -- Tăng tốc để rõ hơn
+    iconGradient.Rotation = (iconGradient.Rotation + delta * 60) % 360
 end)
 
--- Title (fix chèn, position cao hơn)
+local gradient = Instance.new("UIGradient")
+gradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 50)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 20))
+}
+gradient.Rotation = 90
+gradient.Parent = mainFrame
+
+-- Title (fix chèn)
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -60, 0, 35)
-title.Position = UDim2.new(0, 20, 0, 5)
+title.Size = UDim2.new(1, -20, 0.12, 0)
+title.Position = UDim2.new(0, 10, 0, 5)  -- Cao hơn
 title.BackgroundTransparency = 1
 title.Text = "Dark Transparent UI"
-title.TextColor3 = Color3.fromRGB(240, 240, 255)
+title.TextColor3 = Color3.fromRGB(220, 220, 255)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBlack
-title.Parent = mf
+title.TextStrokeTransparency = 0.7
+title.TextStrokeColor3 = Color3.new(0,0,0)
+title.ZIndex = 110
+title.Parent = mainFrame
 
--- Close
-local close = Instance.new("TextButton")
-close.Size = UDim2.new(0, 35, 0, 35)
-close.Position = UDim2.new(1, -45, 0, 5)
-close.BackgroundColor3 = Color3.fromRGB(210, 40, 40)
-close.Text = "✕"
-close.TextColor3 = Color3.new(1,1,1)
-close.TextScaled = true
-close.Font = Enum.Font.GothamBold
-close.ZIndex = 1200
-close.Active = true
-close.Parent = mf
+-- Close Button
+local closeBtn = Instance.new("TextButton")
+closeBtn.Name = "CloseButton"
+closeBtn.Size = UDim2.new(0, 40, 0, 40)
+closeBtn.Position = UDim2.new(1, -50, 0, 5)  -- Cao hơn
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.new(1,1,1)
+closeBtn.TextScaled = true
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Active = true
+closeBtn.ZIndex = 200
+closeBtn.Parent = mainFrame
 
-local clCorner = Instance.new("UICorner", close)
-clCorner.CornerRadius = UDim.new(0, 10)
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 0)  -- Vuông
+closeCorner.Parent = closeBtn
 
--- Tab Buttons (position dưới title, fix chèn)
-local mainTabBtn = Instance.new("TextButton")
-mainTabBtn.Size = UDim2.new(0.5, -10, 0, 30)
-mainTabBtn.Position = UDim2.new(0, 10, 0, 45)
-mainTabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-mainTabBtn.Text = "Main Features"
-mainTabBtn.TextColor3 = Color3.new(1,1,1)
-mainTabBtn.Font = Enum.Font.GothamBold
-mainTabBtn.Parent = mf
+-- Hover close
+local hoverInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quart)
+closeBtn.MouseEnter:Connect(function()
+    TweenService:Create(closeBtn, hoverInfo, {BackgroundColor3 = Color3.fromRGB(255, 80, 80), Size = UDim2.new(0, 45, 0, 45)}):Play()
+end)
+closeBtn.MouseLeave:Connect(function()
+    TweenService:Create(closeBtn, hoverInfo, {BackgroundColor3 = Color3.fromRGB(200, 50, 50), Size = UDim2.new(0, 40, 0, 40)}):Play()
+end)
 
-local settingsTabBtn = Instance.new("TextButton")
-settingsTabBtn.Size = UDim2.new(0.5, -10, 0, 30)
-settingsTabBtn.Position = UDim2.new(0.5, 10, 0, 45)
-settingsTabBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-settingsTabBtn.Text = "Settings"
-settingsTabBtn.TextColor3 = Color3.new(1,1,1)
-settingsTabBtn.Font = Enum.Font.GothamBold
-settingsTabBtn.Parent = mf
+-- Content
+local content = Instance.new("TextLabel")
+content.Size = UDim2.new(1, -40, 0.7, -70)
+content.Position = UDim2.new(0, 20, 0, 60)  -- Dưới title
+content.BackgroundTransparency = 1
+content.Text = "UI Dark theme + transparent\n\n• Icon ⋮⋮⋮ góc trên phải để toggle\n• Kéo thả main frame\n• Nhấn X để đóng\n• Phím U toggle\n• Đã fix bug hide/show & border vuông"
+content.TextColor3 = Color3.fromRGB(200, 200, 220)
+content.TextSize = 18
+content.Font = Enum.Font.Gotham
+content.TextWrapped = true
+content.TextYAlignment = Enum.TextYAlignment.Top
+content.ZIndex = 105
+content.Parent = mainFrame
 
--- Tab Frame (dưới tab buttons)
-local tabFrame = Instance.new("Frame")
-tabFrame.Size = UDim2.new(1, -20, 1, -80)
-tabFrame.Position = UDim2.new(0, 10, 0, 80)
-tabFrame.BackgroundTransparency = 1
-tabFrame.Parent = mf
+-- Tween info
+local fadeInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 
--- Main Content & Settings Content (giữ nguyên)
+-- Trạng thái + lưu vị trí gốc
+local isVisible = false
+local originalMainPos = mainFrame.Position  -- Lưu vị trí gốc
 
-local mainContent = Instance.new("ScrollingFrame", tabFrame)
-mainContent.Size = UDim2.new(1, 0, 1, 0)
-mainContent.BackgroundTransparency = 1
-mainContent.ScrollBarThickness = 5
-mainContent.Visible = true
-
-local featuresList = Instance.new("UIListLayout", mainContent)
-featuresList.Padding = UDim.new(0, 10)
-featuresList.SortOrder = Enum.SortOrder.LayoutOrder
-
--- Features buttons (fly, noclip, inf jump, god, speed - giữ nguyên code từ trước)
-
-local flyBtn = Instance.new("TextButton")
-flyBtn.Size = UDim2.new(1, 0, 0, 40)
-flyBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-flyBtn.Text = "Fly: OFF"
-flyBtn.TextColor3 = Color3.new(1,1,1)
-flyBtn.Font = Enum.Font.Gotham
-flyBtn.Parent = mainContent
-
-local flySpeed = 50
-local flying = false
-local flyConnection
-
-flyBtn.MouseButton1Click:Connect(function()
-    flying = not flying
-    flyBtn.Text = "Fly: " .. (flying and "ON" or "OFF")
-    if flying then
-        local bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.Velocity = Vector3.new(0,0,0)
-        bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        bodyVelocity.Parent = player.Character.HumanoidRootPart
-
-        local bodyGyro = Instance.new("BodyGyro")
-        bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-        bodyGyro.P = 9e4
-        bodyGyro.Parent = player.Character.HumanoidRootPart
-
-        flyConnection = RunService.RenderStepped:Connect(function()
-            local cam = workspace.CurrentCamera
-            local moveDir = Vector3.new(0,0,0)
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0,1,0) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir - Vector3.new(0,1,0) end
-            bodyVelocity.Velocity = moveDir * flySpeed
-            bodyGyro.CFrame = cam.CFrame
+-- Toggle function
+local function toggleUI()
+    if isVisible then
+        -- Hide: Thu vào icon + fade
+        originalMainPos = mainFrame.Position  -- Lưu trước hide
+        local iconAbsPos = toggleIcon.AbsolutePosition
+        local iconAbsSize = toggleIcon.AbsoluteSize
+        TweenService:Create(mainFrame, fadeInfo, {
+            Size = UDim2.new(0, iconAbsSize.X * 0.8, 0, iconAbsSize.Y * 0.8),
+            Position = UDim2.new(0, iconAbsPos.X + iconAbsSize.X/2 - iconAbsSize.X*0.4, 0, iconAbsPos.Y + iconAbsSize.Y/2 - iconAbsSize.Y*0.4),
+            BackgroundTransparency = 1
+        }):Play()
+        task.delay(0.6, function()
+            mainFrame.Visible = false
         end)
     else
-        if flyConnection then flyConnection:Disconnect() end
-        if player.Character.HumanoidRootPart:FindFirstChild("BodyVelocity") then player.Character.HumanoidRootPart.BodyVelocity:Destroy() end
-        if player.Character.HumanoidRootPart:FindFirstChild("BodyGyro") then player.Character.HumanoidRootPart.BodyGyro:Destroy() end
+        -- Show: Expand từ icon, restore vị trí gốc
+        mainFrame.Visible = true
+        mainFrame.Size = UDim2.new(0, 100, 0, 100)
+        mainFrame.Position = toggleIcon.Position
+        mainFrame.BackgroundTransparency = 1
+        TweenService:Create(mainFrame, fadeInfo, {
+            Size = UDim2.new(0.42, 0, 0.52, 0),
+            Position = originalMainPos,  -- Restore vị trí trước hide
+            BackgroundTransparency = 0.08
+        }):Play()
     end
-end)
-
--- (Thêm các feature khác như noclip, inf jump, god, speed tương tự, để ngắn gọn tôi omit ở đây, paste từ code trước)
-
--- Settings Content (omit chi tiết, paste từ trước)
-
--- Tab Switch (giữ nguyên)
-
--- Anim + Hide/Show Fix (lưu position gốc trước hide, restore khi show)
-local animInfo = TweenInfo.new(0.55, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut)
-local isShowing = true
-local originalPosition = mf.Position  -- Lưu vị trí gốc
-
-local function hideUI()
-    if not isShowing then return end
-    originalPosition = mf.Position  -- Lưu vị trí hiện tại trước hide
-    local iconAbsPos = icon.AbsolutePosition
-    local iconAbsSize = icon.AbsoluteSize
-    TweenService:Create(mf, animInfo, {
-        Size = UDim2.new(0, iconAbsSize.X * 0.8, 0, iconAbsSize.Y * 0.8),
-        Position = UDim2.new(0, iconAbsPos.X + iconAbsSize.X/2 - (iconAbsSize.X * 0.4), 0, iconAbsPos.Y + iconAbsSize.Y/2 - (iconAbsSize.Y * 0.4)),
-        BackgroundTransparency = 1,
-        Rotation = 15
-    }):Play()
-    task.delay(0.55, function()
-        mf.Visible = false
-        mf.Rotation = 0
-    end)
-    isShowing = false
+    isVisible = not isVisible
 end
 
-local function showUI()
-    if isShowing then return end
-    mf.Visible = true
-    mf.Rotation = 0
-    mf.BackgroundTransparency = 1
-    mf.Size = UDim2.new(0, 100, 0, 100)
-    mf.Position = icon.Position
-    TweenService:Create(mf, animInfo, {
-        Size = UDim2.new(0.4, 0, 0.6, 0),
-        Position = originalPosition,  -- Restore vị trí lưu trước hide
-        BackgroundTransparency = 0.32
-    }):Play()
-    isShowing = true
-end
+toggleIcon.MouseButton1Click:Connect(toggleUI)
 
-local function toggleUI()
-    if isShowing then hideUI() else showUI() end
-end
-
-icon.MouseButton1Click:Connect(toggleUI)
-
-icon.MouseEnter:Connect(function()
-    TweenService:Create(icon, TweenInfo.new(0.2), {Size = UDim2.new(0, 52, 0, 52)}):Play()
-end)
-icon.MouseLeave:Connect(function()
-    TweenService:Create(icon, TweenInfo.new(0.2), {Size = UDim2.new(0, 45, 0, 45)}):Play()
-end)
-
-close.MouseButton1Click:Connect(function()
-    hideUI()
+-- Close
+closeBtn.MouseButton1Click:Connect(function()
+    TweenService:Create(mainFrame, fadeInfo, {BackgroundTransparency = 1}):Play()
     task.delay(0.6, function()
-        sg:Destroy()
+        screenGui:Destroy()
     end)
 end)
 
+-- Phím U toggle, C destroy
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
-    if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
-        hideUI()
-    elseif input.KeyCode == Enum.KeyCode.U then
+    if input.KeyCode == Enum.KeyCode.U then
         toggleUI()
     elseif input.KeyCode == Enum.KeyCode.C then
-        sg:Destroy()
+        screenGui:Destroy()
     end
 end)
 
-print("UI fixed! Hide/show restore position, border bo góc ăn khớp, tiêu đề không chèn.")
+-- Hover icon (giữ nguyên)
+toggleIcon.MouseEnter:Connect(function()
+    TweenService:Create(toggleIcon, hoverInfo, {Size = UDim2.new(0, 55, 0, 55), BackgroundColor3 = Color3.fromRGB(50, 50, 60), TextColor3 = Color3.fromRGB(0, 200, 255)}):Play()
+end)
+toggleIcon.MouseLeave:Connect(function()
+    TweenService:Create(toggleIcon, hoverInfo, {Size = UDim2.new(0, 50, 0, 50), BackgroundColor3 = Color3.fromRGB(30, 30, 40), TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+end)
+
+print("UI fixed: Icon top right default, square border khớp, hide/show không bug thu góc, rainbow rõ ràng.")
