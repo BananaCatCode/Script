@@ -1,5 +1,5 @@
--- Dark Transparent UI - Rainbow Border (đường viền cầu vồng chuyển động)
--- Icon draggable + Hide thu vào icon + Ctrl hide + Rainbow border
+-- Dark Transparent UI - Rainbow Border FIXED (hiển thị rõ + chuyển động mượt)
+-- Border rainbow cầu vồng xoay, set Color trắng để gradient work
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -20,7 +20,7 @@ sg.IgnoreGuiInset = true
 sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 sg.Parent = pg
 
--- ICON (draggable)
+-- ICON
 local icon = Instance.new("TextButton")
 icon.Name = "IconToggle"
 icon.Size = UDim2.new(0, 45, 0, 45)
@@ -39,18 +39,19 @@ local iconCorner = Instance.new("UICorner", icon)
 iconCorner.CornerRadius = UDim.new(1, 0)
 
 local iconStroke = Instance.new("UIStroke", icon)
-iconStroke.Color = Color3.fromRGB(100, 100, 200)
 iconStroke.Thickness = 2.5
-iconStroke.Transparency = 0.3
+iconStroke.Transparency = 0.2
+iconStroke.Color = Color3.new(1,1,1)  -- Bắt buộc trắng để gradient work
+iconStroke.Parent = icon
 
--- Rainbow gradient cho icon stroke (tùy chọn, nhẹ nhàng)
 local iconGradient = Instance.new("UIGradient", iconStroke)
 iconGradient.Color = ColorSequence.new{
     ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
-    ColorSequenceKeypoint.new(0.2, Color3.fromRGB(255, 165, 0)),
-    ColorSequenceKeypoint.new(0.4, Color3.fromRGB(0, 255, 0)),
-    ColorSequenceKeypoint.new(0.6, Color3.fromRGB(0, 255, 255)),
-    ColorSequenceKeypoint.new(0.8, Color3.fromRGB(0, 0, 255)),
+    ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 165, 0)),
+    ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255, 255, 0)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 0)),
+    ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 255, 255)),
+    ColorSequenceKeypoint.new(0.83, Color3.fromRGB(0, 0, 255)),
     ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 255))
 }
 iconGradient.Rotation = 0
@@ -71,11 +72,12 @@ mf.Parent = sg
 local mfCorner = Instance.new("UICorner", mf)
 mfCorner.CornerRadius = UDim.new(0, 18)
 
--- Rainbow border chính (UIStroke + UIGradient)
+-- Rainbow border FIXED
 local rainbowStroke = Instance.new("UIStroke")
 rainbowStroke.Name = "RainbowBorder"
-rainbowStroke.Thickness = 3.5
-rainbowStroke.Transparency = 0.1
+rainbowStroke.Thickness = 4.5  -- Tăng dày để nổi bật
+rainbowStroke.Transparency = 0  -- Không mờ
+rainbowStroke.Color = Color3.new(1,1,1)  -- BẮT BUỘC set trắng để UIGradient hiển thị!
 rainbowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 rainbowStroke.LineJoinMode = Enum.LineJoinMode.Round
 rainbowStroke.Parent = mf
@@ -93,9 +95,11 @@ rainbowGradient.Color = ColorSequence.new{
 rainbowGradient.Rotation = 0
 rainbowGradient.Parent = rainbowStroke
 
--- Hiệu ứng xoay rainbow (chuyển động chậm)
-RunService.Heartbeat:Connect(function(delta)
-    rainbowGradient.Rotation = (rainbowGradient.Rotation + delta * 30) % 360  -- Xoay 30 độ/giây
+-- Hiệu ứng xoay rainbow mượt (dùng RenderStepped)
+local rotationSpeed = 45  -- Độ/giây, chỉnh nhỏ hơn nếu muốn chậm
+RunService.RenderStepped:Connect(function(delta)
+    rainbowGradient.Rotation = (rainbowGradient.Rotation + delta * rotationSpeed) % 360
+    iconGradient.Rotation = (iconGradient.Rotation + delta * rotationSpeed) % 360  -- Đồng bộ icon
 end)
 
 -- Title, Close, Content (giữ nguyên)
@@ -127,63 +131,51 @@ local cont = Instance.new("TextLabel", mf)
 cont.Size = UDim2.new(1, -40, 0.75, -80)
 cont.Position = UDim2.new(0, 20, 0, 70)
 cont.BackgroundTransparency = 1
-cont.Text = "UI dark transparent + Rainbow Border!\n\n• Border cầu vồng chuyển động nhẹ.\n• Icon ⋮ draggable\n• Click icon: Toggle thu/expand\n• Ctrl: Hide hẳn (thu vào icon)\n• U: Toggle\n• X: Đóng vĩnh viễn"
+cont.Text = "Rainbow Border đã fix hiển thị rõ!\n\n• Border cầu vồng xoay mượt (đỏ-cam-vàng-xanh...).\n• Icon cũng có rainbow nhẹ.\n• Ctrl: Hide hẳn (thu vào icon).\n• Click icon: Toggle thu/expand.\n• U: Toggle | X: Đóng."
 cont.TextColor3 = Color3.fromRGB(210, 210, 230)
 cont.TextSize = 19
 cont.Font = Enum.Font.Gotham
 cont.TextWrapped = true
 cont.TextYAlignment = Enum.TextYAlignment.Top
 
--- Anim info
+-- Anim functions (giữ nguyên từ trước)
 local animInfo = TweenInfo.new(0.55, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut)
-
 local isShowing = true
 
 local function hideUI()
     if not isShowing then return end
-    
     local iconAbsPos = icon.AbsolutePosition
     local iconAbsSize = icon.AbsoluteSize
-    
     TweenService:Create(mf, animInfo, {
         Size = UDim2.new(0, iconAbsSize.X * 0.8, 0, iconAbsSize.Y * 0.8),
         Position = UDim2.new(0, iconAbsPos.X + iconAbsSize.X/2 - (iconAbsSize.X * 0.4), 0, iconAbsPos.Y + iconAbsSize.Y/2 - (iconAbsSize.Y * 0.4)),
         BackgroundTransparency = 1,
         Rotation = 15
     }):Play()
-    
     task.delay(0.55, function()
         mf.Visible = false
         mf.Rotation = 0
     end)
-    
     isShowing = false
 end
 
 local function showUI()
     if isShowing then return end
-    
     mf.Visible = true
     mf.Rotation = 0
     mf.BackgroundTransparency = 1
     mf.Size = UDim2.new(0, 100, 0, 100)
     mf.Position = icon.Position
-    
     TweenService:Create(mf, animInfo, {
         Size = UDim2.new(0.38, 0, 0.55, 0),
         Position = UDim2.new(icon.Position.X.Scale + 0.05, icon.Position.X.Offset + 60, icon.Position.Y.Scale + 0.05, icon.Position.Y.Offset + 60),
         BackgroundTransparency = 0.32
     }):Play()
-    
     isShowing = true
 end
 
 local function toggleUI()
-    if isShowing then
-        hideUI()
-    else
-        showUI()
-    end
+    if isShowing then hideUI() else showUI() end
 end
 
 icon.MouseButton1Click:Connect(toggleUI)
@@ -213,4 +205,4 @@ UserInputService.InputBegan:Connect(function(input, gp)
     end
 end)
 
-print("Dark UI + Rainbow Border loaded! Border cầu vồng chuyển động, Ctrl để hide hẳn.")
+print("Rainbow Border FIXED! Execute lại để thấy viền cầu vồng xoay rõ ràng.")
