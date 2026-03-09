@@ -1,202 +1,182 @@
--- Dark Transparent UI với Toggle Icon (⋮⋮⋮) - Execute trực tiếp hoặc loadstring
--- Icon nhỏ ở góc dưới phải: Click để show/hide main UI
--- Nút X: Đóng hoàn toàn (destroy)
--- Phím U: Toggle (fallback)
--- Đã fix cho Infinite Yield + Draggable main frame
+-- Dark Transparent UI FIX - Transparent thật + Toggle Icon + Nút X nổi bật
+-- Execute trong Infinite Yield hoặc executor
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local pg = player:WaitForChild("PlayerGui")
 
 -- Xóa UI cũ
-if playerGui:FindFirstChild("DarkTransparentUI") then
-    playerGui.DarkTransparentUI:Destroy()
+if pg:FindFirstChild("DarkTransparentUI") then
+    pg.DarkTransparentUI:Destroy()
 end
 
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "DarkTransparentUI"
-screenGui.ResetOnSpawn = false
-screenGui.IgnoreGuiInset = true
-screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-screenGui.Parent = playerGui
+local sg = Instance.new("ScreenGui")
+sg.Name = "DarkTransparentUI"
+sg.ResetOnSpawn = false
+sg.IgnoreGuiInset = true
+sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+sg.Parent = pg
 
--- ICON TOGGLE (luôn visible, nhỏ gọn ở góc dưới phải)
-local toggleIcon = Instance.new("TextButton")
-toggleIcon.Name = "ToggleIcon"
-toggleIcon.Size = UDim2.new(0, 50, 0, 50)
-toggleIcon.Position = UDim2.new(1, -60, 1, -60)
-toggleIcon.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-toggleIcon.Text = "⋮⋮⋮"  -- Icon đặc trưng (menu dots)
-toggleIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleIcon.TextScaled = true
-toggleIcon.Font = Enum.Font.GothamBold
-toggleIcon.Active = true
-toggleIcon.ZIndex = 999  -- Cao nhất
-toggleIcon.Parent = screenGui
+-- TOGGLE ICON (luôn ở góc dưới phải, click để show/hide)
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Name = "ToggleBtn"
+toggleBtn.Size = UDim2.new(0, 48, 0, 48)
+toggleBtn.Position = UDim2.new(1, -60, 1, -70)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+toggleBtn.Text = "⋮"  -- Icon đặc trưng (có thể đổi thành "⚙️" hoặc "≡")
+toggleBtn.TextColor3 = Color3.fromRGB(180, 180, 255)
+toggleBtn.TextScaled = true
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.ZIndex = 1000
+toggleBtn.Active = true
+toggleBtn.Parent = sg
 
-local iconCorner = Instance.new("UICorner")
-iconCorner.CornerRadius = UDim.new(0, 12)
-iconCorner.Parent = toggleIcon
+local tbCorner = Instance.new("UICorner", toggleBtn)
+tbCorner.CornerRadius = UDim.new(1, 0)  -- tròn hoàn toàn
 
-local iconStroke = Instance.new("UIStroke")
-iconStroke.Color = Color3.fromRGB(80, 80, 100)
-iconStroke.Thickness = 2
-iconStroke.Transparency = 0.5
-iconStroke.Parent = toggleIcon
+local tbStroke = Instance.new("UIStroke", toggleBtn)
+tbStroke.Color = Color3.fromRGB(100, 100, 200)
+tbStroke.Thickness = 2
+tbStroke.Transparency = 0.4
 
--- Hover cho icon
-local hoverInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quart)
-toggleIcon.MouseEnter:Connect(function()
-    TweenService:Create(toggleIcon, hoverInfo, {
-        Size = UDim2.new(0, 55, 0, 55),
-        BackgroundColor3 = Color3.fromRGB(50, 50, 60),
-        TextColor3 = Color3.fromRGB(0, 200, 255)
+-- Hover icon
+toggleBtn.MouseEnter:Connect(function()
+    TweenService:Create(toggleBtn, TweenInfo.new(0.25), {
+        BackgroundColor3 = Color3.fromRGB(60, 60, 90),
+        TextColor3 = Color3.fromRGB(220, 220, 255),
+        Size = UDim2.new(0, 54, 0, 54)
     }):Play()
 end)
-toggleIcon.MouseLeave:Connect(function()
-    TweenService:Create(toggleIcon, hoverInfo, {
-        Size = UDim2.new(0, 50, 0, 50),
-        BackgroundColor3 = Color3.fromRGB(30, 30, 40),
-        TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.MouseLeave:Connect(function()
+    TweenService:Create(toggleBtn, TweenInfo.new(0.25), {
+        BackgroundColor3 = Color3.fromRGB(35, 35, 45),
+        TextColor3 = Color3.fromRGB(180, 180, 255),
+        Size = UDim2.new(0, 48, 0, 48)
     }):Play()
 end)
 
--- MAIN FRAME (bắt đầu ẩn)
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0.42, 0, 0.52, 0)
-mainFrame.Position = UDim2.new(0.29, 0, 0.24, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-mainFrame.BorderSizePixel = 0
-mainFrame.BackgroundTransparency = 1  -- Ẩn ban đầu
-mainFrame.Active = true
-mainFrame.Draggable = true  -- Kéo thả được!
-mainFrame.ZIndex = 100
-mainFrame.Parent = screenGui
+-- MAIN FRAME (bắt đầu ẩn, transparent thật)
+local mf = Instance.new("Frame")
+mf.Name = "Main"
+mf.Size = UDim2.new(0.38, 0, 0.55, 0)
+mf.Position = UDim2.new(0.31, 0, 0.225, 0)
+mf.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
+mf.BackgroundTransparency = 1  -- ẩn ban đầu
+mf.BorderSizePixel = 0
+mf.Active = true
+mf.Draggable = true
+mf.ZIndex = 500
+mf.Parent = sg
 
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 16)
-mainCorner.Parent = mainFrame
+local mfCorner = Instance.new("UICorner", mf)
+mfCorner.CornerRadius = UDim.new(0, 18)
 
-local mainStroke = Instance.new("UIStroke")
-mainStroke.Color = Color3.fromRGB(80, 80, 100)
-mainStroke.Thickness = 2
-mainStroke.Transparency = 0.3
-mainStroke.Parent = mainFrame
+local mfStroke = Instance.new("UIStroke", mf)
+mfStroke.Color = Color3.fromRGB(90, 90, 140)
+mfStroke.Thickness = 2.5
+mfStroke.Transparency = 0.35
 
-local gradient = Instance.new("UIGradient")
-gradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 50)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 20))
+local grad = Instance.new("UIGradient", mf)
+grad.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 30, 50)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 25))
 }
-gradient.Rotation = 90
-gradient.Parent = mainFrame
+grad.Rotation = 45
 
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -20, 0.12, 0)
-title.Position = UDim2.new(0, 10, 0, 10)
+-- Title
+local title = Instance.new("TextLabel", mf)
+title.Size = UDim2.new(1, -60, 0.1, 0)
+title.Position = UDim2.new(0, 20, 0, 15)
 title.BackgroundTransparency = 1
 title.Text = "Dark Transparent UI"
-title.TextColor3 = Color3.fromRGB(220, 220, 255)
+title.TextColor3 = Color3.fromRGB(240, 240, 255)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBlack
-title.TextStrokeTransparency = 0.7
-title.TextStrokeColor3 = Color3.new(0,0,0)
-title.ZIndex = 110
-title.Parent = mainFrame
+title.TextStrokeTransparency = 0.75
 
-local closeBtn = Instance.new("TextButton")
-closeBtn.Name = "CloseButton"
-closeBtn.Size = UDim2.new(0, 40, 0, 40)
-closeBtn.Position = UDim2.new(1, -50, 0, 10)
-closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-closeBtn.Text = "✕"
-closeBtn.TextColor3 = Color3.new(1,1,1)
-closeBtn.TextScaled = true
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.Active = true
-closeBtn.Selectable = true
-closeBtn.ZIndex = 200
-closeBtn.Parent = mainFrame
+-- Close Button (đỏ nổi bật, ZIndex cao)
+local close = Instance.new("TextButton", mf)
+close.Name = "Close"
+close.Size = UDim2.new(0, 45, 0, 45)
+close.Position = UDim2.new(1, -55, 0, 10)
+close.BackgroundColor3 = Color3.fromRGB(210, 40, 40)
+close.Text = "X"
+close.TextColor3 = Color3.new(1,1,1)
+close.TextScaled = true
+close.Font = Enum.Font.GothamBold
+close.ZIndex = 1200
+close.Active = true
+close.Parent = mf
 
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 10)
-closeCorner.Parent = closeBtn
+local clCorner = Instance.new("UICorner", close)
+clCorner.CornerRadius = UDim.new(0, 12)
 
--- Hover cho close
-closeBtn.MouseEnter:Connect(function()
-    TweenService:Create(closeBtn, hoverInfo, {
-        BackgroundColor3 = Color3.fromRGB(255, 80, 80),
+-- Hover close
+close.MouseEnter:Connect(function()
+    TweenService:Create(close, TweenInfo.new(0.2), {
+        BackgroundColor3 = Color3.fromRGB(255, 60, 60),
+        Size = UDim2.new(0, 50, 0, 50)
+    }):Play()
+end)
+close.MouseLeave:Connect(function()
+    TweenService:Create(close, TweenInfo.new(0.2), {
+        BackgroundColor3 = Color3.fromRGB(210, 40, 40),
         Size = UDim2.new(0, 45, 0, 45)
     }):Play()
 end)
-closeBtn.MouseLeave:Connect(function()
-    TweenService:Create(closeBtn, hoverInfo, {
-        BackgroundColor3 = Color3.fromRGB(200, 50, 50),
-        Size = UDim2.new(0, 40, 0, 40)
-    }):Play()
-end)
 
-local content = Instance.new("TextLabel")
-content.Size = UDim2.new(1, -40, 0.7, -70)
-content.Position = UDim2.new(0, 20, 0, 70)
-content.BackgroundTransparency = 1
-content.Text = "UI Dark theme + transparent\n\n• Icon ⋮⋮⋮ (góc dưới phải) để toggle show/hide\n• Kéo thả main frame được\n• Nhấn X để đóng hoàn toàn\n• Phím U để toggle\n\nĐã fix cho Infinite Yield!"
-content.TextColor3 = Color3.fromRGB(200, 200, 220)
-content.TextSize = 18
-content.Font = Enum.Font.Gotham
-content.TextWrapped = true
-content.TextYAlignment = Enum.TextYAlignment.Top
-content.ZIndex = 105
-content.Parent = mainFrame
+-- Content
+local cont = Instance.new("TextLabel", mf)
+cont.Size = UDim2.new(1, -40, 0.75, -80)
+cont.Position = UDim2.new(0, 20, 0, 70)
+cont.BackgroundTransparency = 1
+cont.Text = "Đây là UI dark theme với hiệu ứng transparent thật sự!\n\n- Nền mờ gradient (nhìn xuyên game).\n- Fade in/out mượt.\n- Hover effects nổi bật.\n- Icon ⋮ góc dưới phải để toggle show/hide.\n- Kéo thả frame được.\n- Nhấn X để đóng vĩnh viễn.\n\nNhấn U để toggle nhanh."
+cont.TextColor3 = Color3.fromRGB(210, 210, 230)
+cont.TextSize = 19
+cont.Font = Enum.Font.Gotham
+cont.TextWrapped = true
+cont.TextYAlignment = Enum.TextYAlignment.Top
 
--- Tween info
-local fadeInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+-- Fade Tween
+local fadeTween = TweenInfo.new(0.65, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 
--- Trạng thái UI
-local isVisible = false
+-- Trạng thái
+local showing = false
 
--- Toggle function
-local function toggleUI()
-    if isVisible then
-        -- Hide (fade out)
-        TweenService:Create(mainFrame, fadeInfo, {BackgroundTransparency = 1}):Play()
+local function toggle()
+    if showing then
+        TweenService:Create(mf, fadeTween, {BackgroundTransparency = 1}):Play()
     else
-        -- Show (fade in)
-        mainFrame.BackgroundTransparency = 1
-        TweenService:Create(mainFrame, fadeInfo, {BackgroundTransparency = 0.08}):Play()
+        mf.BackgroundTransparency = 1
+        TweenService:Create(mf, fadeTween, {BackgroundTransparency = 0.32}):Play()  -- 0.32 = transparent đẹp, điều chỉnh nếu muốn mờ hơn
     end
-    isVisible = not isVisible
+    showing = not showing
 end
 
--- Icon click: Toggle
-toggleIcon.MouseButton1Click:Connect(toggleUI)
+-- Icon click toggle
+toggleBtn.MouseButton1Click:Connect(toggle)
 
--- Close: Destroy toàn bộ
-closeBtn.MouseButton1Click:Connect(function()
-    print("Đóng hoàn toàn UI!")
-    TweenService:Create(mainFrame, fadeInfo, {BackgroundTransparency = 1}):Play()
-    wait(0.6)
-    screenGui:Destroy()
+-- Close destroy
+close.MouseButton1Click:Connect(function()
+    TweenService:Create(mf, fadeTween, {BackgroundTransparency = 1}):Play()
+    task.wait(0.7)
+    sg:Destroy()
 end)
 
--- Phím U fallback toggle
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
+-- Phím U toggle, C force close
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
     if input.KeyCode == Enum.KeyCode.U then
-        toggleUI()
+        toggle()
+    elseif input.KeyCode == Enum.KeyCode.C then
+        sg:Destroy()
     end
 end)
 
--- Phím C force destroy
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    if input.KeyCode == Enum.KeyCode.C then
-        screenGui:Destroy()
-    end
-end)
+-- Auto show lần đầu
+toggle()  -- Mở UI ngay khi execute
 
-print("Dark UI với Toggle Icon ⋮⋮⋮ đã load! Click icon để mở, X để đóng vĩnh viễn.")
+print("Dark Transparent UI FIXED loaded! Icon ⋮ để toggle, X để đóng.")
