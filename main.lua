@@ -1,6 +1,4 @@
--- Dark Transparent UI - Fixed & Improved Version
--- Bo góc mượt, viền rainbow, transparency đẹp, fly hoàn chỉnh, drag ổn định
-
+-- Dark Transparent UI - Fix Logic (UI Toggle, Fly, Speed)
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
@@ -22,15 +20,15 @@ sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 sg.Parent = playerGui
 
 ------------------------------------
---       ICON (góc trên phải)      --
+--       ICON (Góc trên phải)     --
 ------------------------------------
-local icon = Instance.new("ImageButton")  -- Dùng ImageButton cho đẹp hơn TextButton
+local icon = Instance.new("ImageButton")
 icon.Name = "IconToggle"
 icon.Size = UDim2.new(0, 60, 0, 60)
 icon.Position = UDim2.new(1, -80, 0, 40)
 icon.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
 icon.BackgroundTransparency = 0.35
-icon.Image = "rbxassetid://7072718362"  -- icon 3 chấm (có thể thay)
+icon.Image = "rbxassetid://7072718362"
 icon.ImageColor3 = Color3.fromRGB(180, 180, 255)
 icon.AutoButtonColor = false
 icon.ZIndex = 2000
@@ -49,28 +47,24 @@ iconStroke.Parent = icon
 local iconGradient = Instance.new("UIGradient")
 iconGradient.Color = ColorSequence.new{
     ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)),
-    ColorSequenceKeypoint.new(0.2, Color3.fromRGB(255, 180, 60)),
-    ColorSequenceKeypoint.new(0.4, Color3.fromRGB(220, 255, 80)),
-    ColorSequenceKeypoint.new(0.6, Color3.fromRGB(80, 255, 140)),
-    ColorSequenceKeypoint.new(0.8, Color3.fromRGB(60, 220, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(220, 255, 80)),
     ColorSequenceKeypoint.new(1, Color3.fromRGB(140, 80, 255))
 }
-iconGradient.Rotation = 45
 iconGradient.Parent = iconStroke
 
 ------------------------------------
---        MAIN FRAME               --
+--        MAIN FRAME              --
 ------------------------------------
 local mf = Instance.new("Frame")
 mf.Name = "MainFrame"
-mf.Size = UDim2.new(0.45, 0, 0.62, 0)
-mf.Position = UDim2.new(0.275, 0, 0.19, 0)
+mf.Size = UDim2.new(0, 380, 0, 280) -- Cỡ khi đang ẩn
+mf.Position = UDim2.new(0.5, -200, 0.5, -150)
 mf.BackgroundColor3 = Color3.fromRGB(15, 15, 28)
-mf.BackgroundTransparency = 0.38   -- transparency đẹp hơn
+mf.BackgroundTransparency = 1
 mf.BorderSizePixel = 0
 mf.ClipsDescendants = true
 mf.ZIndex = 1000
-mf.Visible = false
+mf.Visible = false 
 mf.Parent = sg
 
 local mfCorner = Instance.new("UICorner")
@@ -84,19 +78,43 @@ mfStroke.Color = Color3.new(1,1,1)
 mfStroke.Parent = mf
 
 local mfGradient = Instance.new("UIGradient")
-mfGradient.Color = iconGradient.Color  -- đồng bộ màu rainbow
-mfGradient.Rotation = 90
+mfGradient.Color = iconGradient.Color
 mfGradient.Parent = mfStroke
 
 -- Rainbow xoay mượt
-local rainbowConn
-rainbowConn = RunService.RenderStepped:Connect(function(dt)
+RunService.RenderStepped:Connect(function(dt)
     local rot = (mfGradient.Rotation + dt * 45) % 360
     mfGradient.Rotation = rot
     iconGradient.Rotation = rot
 end)
 
--- Title bar (dùng để drag frame)
+------------------------------------
+--        TOGGLE UI LOGIC         --
+------------------------------------
+local isUIOpen = false
+
+local function toggleUI()
+    isUIOpen = not isUIOpen
+    local tweenInfo = TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    
+    if isUIOpen then
+        mf.Visible = true
+        TweenService:Create(mf, tweenInfo, {Size = UDim2.new(0, 400, 0, 300), BackgroundTransparency = 0.38}):Play()
+    else
+        local hideTween = TweenService:Create(mf, tweenInfo, {Size = UDim2.new(0, 380, 0, 280), BackgroundTransparency = 1})
+        hideTween:Play()
+        -- Chờ Tween xong mới ẩn hoàn toàn, tránh glitch
+        hideTween.Completed:Once(function()
+            if not isUIOpen then mf.Visible = false end
+        end)
+    end
+end
+
+icon.MouseButton1Click:Connect(toggleUI)
+
+------------------------------------
+--        TITLE BAR & DRAG        --
+------------------------------------
 local titleBar = Instance.new("Frame", mf)
 titleBar.Size = UDim2.new(1, 0, 0, 45)
 titleBar.BackgroundTransparency = 1
@@ -112,7 +130,6 @@ title.TextSize = 22
 title.Font = Enum.Font.GothamBlack
 title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Close button
 local close = Instance.new("TextButton", titleBar)
 close.Size = UDim2.new(0, 36, 0, 36)
 close.Position = UDim2.new(1, -46, 0.5, -18)
@@ -122,102 +139,203 @@ close.TextColor3 = Color3.new(1,1,1)
 close.TextSize = 28
 close.Font = Enum.Font.GothamBold
 close.ZIndex = 1200
+Instance.new("UICorner", close).CornerRadius = UDim.new(0, 10)
 
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 10)
-closeCorner.Parent = close
+close.MouseEnter:Connect(function() TweenService:Create(close, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 70, 70)}):Play() end)
+close.MouseLeave:Connect(function() TweenService:Create(close, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play() end)
+close.MouseButton1Click:Connect(toggleUI)
 
-close.MouseEnter:Connect(function()
-    TweenService:Create(close, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 70, 70)}):Play()
+-- Kéo thả UI mượt
+local dragging, dragInput, dragStart, startPos
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mf.Position
+        input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+    end
 end)
-close.MouseLeave:Connect(function()
-    TweenService:Create(close, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
+titleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        mf.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
 end)
 
 ------------------------------------
---        Tab Content              --
+--        TAB CONTENT             --
 ------------------------------------
 local content = Instance.new("ScrollingFrame", mf)
 content.Size = UDim2.new(1, -20, 1, -55)
 content.Position = UDim2.new(0, 10, 0, 50)
 content.BackgroundTransparency = 1
-content.ScrollBarThickness = 5
-content.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 160)
-content.CanvasSize = UDim2.new(0, 0, 0, 0)
+content.ScrollBarThickness = 4
+content.ScrollBarImageColor3 = Color3.fromRGB(150, 150, 200)
+content.BorderSizePixel = 0
 
 local layout = Instance.new("UIListLayout", content)
 layout.Padding = UDim.new(0, 10)
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.FillDirection = Enum.FillDirection.Vertical
-
--- Auto update canvas size
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     content.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 20)
 end)
 
 ------------------------------------
---        FLY FUNCTION             --
+--        LOGIC: SPEED            --
+------------------------------------
+local speedFrame = Instance.new("Frame", content)
+speedFrame.Size = UDim2.new(1, -10, 0, 48)
+speedFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
+Instance.new("UICorner", speedFrame).CornerRadius = UDim.new(0, 8)
+local sfStroke = Instance.new("UIStroke", speedFrame)
+sfStroke.Color = Color3.fromRGB(255, 120, 120)
+
+local speedLabel = Instance.new("TextLabel", speedFrame)
+speedLabel.Size = UDim2.new(0.5, 0, 1, 0)
+speedLabel.Position = UDim2.new(0, 15, 0, 0)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "Set Speed:"
+speedLabel.TextColor3 = Color3.new(1,1,1)
+speedLabel.Font = Enum.Font.GothamSemibold
+speedLabel.TextSize = 16
+speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local speedBox = Instance.new("TextBox", speedFrame)
+speedBox.Size = UDim2.new(0.4, 0, 0.7, 0)
+speedBox.Position = UDim2.new(0.55, 0, 0.15, 0)
+speedBox.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
+speedBox.TextColor3 = Color3.new(1,1,1)
+speedBox.Font = Enum.Font.Gotham
+speedBox.TextSize = 16
+speedBox.Text = "16"
+Instance.new("UICorner", speedBox).CornerRadius = UDim.new(0, 6)
+
+local currentSpeed = 16
+
+local function updateSpeed()
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = currentSpeed
+    end
+end
+
+speedBox.FocusLost:Connect(function()
+    local newSpeed = tonumber(speedBox.Text)
+    if newSpeed then
+        currentSpeed = newSpeed
+        updateSpeed()
+    else
+        speedBox.Text = tostring(currentSpeed)
+    end
+end)
+
+-- Giữ nguyên speed nếu nhân vật chết và hồi sinh
+player.CharacterAdded:Connect(function()
+    task.wait(0.5) -- Đợi nhân vật load xong
+    updateSpeed()
+end)
+
+------------------------------------
+--        LOGIC: FLY              --
 ------------------------------------
 local flying = false
-local flySpeed = 80
-local ctrl = {forward = 0, backward = 0, left = 0, right = 0, up = 0, down = 0}
-local lastCtrl = {forward = 0, backward = 0, left = 0, right = 0, up = 0, down = 0}
-local flyKeys = {W = "forward", S = "backward", A = "left", D = "right", Space = "up", LeftControl = "down"}
+local ctrl = {f = 0, b = 0, l = 0, r = 0, u = 0, d = 0}
+local bg, bv, flyStepped
 
 local flyBtn = Instance.new("TextButton", content)
-flyBtn.Size = UDim2.new(1, 0, 0, 48)
+flyBtn.Size = UDim2.new(1, -10, 0, 48)
 flyBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
-flyBtn.Text = "Fly (OFF)"
+flyBtn.Text = "Fly: OFF"
 flyBtn.TextColor3 = Color3.new(1,1,1)
 flyBtn.Font = Enum.Font.GothamSemibold
-flyBtn.TextSize = 18
+flyBtn.TextSize = 16
+Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(0, 8)
+local flyBtnStroke = Instance.new("UIStroke", flyBtn)
+flyBtnStroke.Color = Color3.fromRGB(120, 120, 255)
 
-local flyCorner = Instance.new("UICorner")
-flyCorner.CornerRadius = UDim.new(0, 10)
-flyCorner.Parent = flyBtn
+-- Nhận diện phím
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.W then ctrl.f = 1
+    elseif input.KeyCode == Enum.KeyCode.S then ctrl.b = 1
+    elseif input.KeyCode == Enum.KeyCode.A then ctrl.l = 1
+    elseif input.KeyCode == Enum.KeyCode.D then ctrl.r = 1
+    elseif input.KeyCode == Enum.KeyCode.Space then ctrl.u = 1
+    elseif input.KeyCode == Enum.KeyCode.LeftControl then ctrl.d = 1 end
+end)
 
-local flyStroke = Instance.new("UIStroke")
-flyStroke.Thickness = 1.5
-flyStroke.Transparency = 0.6
-flyStroke.Color = Color3.fromRGB(120, 120, 255)
-flyStroke.Parent = flyBtn
+UserInputService.InputEnded:Connect(function(input, gpe)
+    if input.KeyCode == Enum.KeyCode.W then ctrl.f = 0
+    elseif input.KeyCode == Enum.KeyCode.S then ctrl.b = 0
+    elseif input.KeyCode == Enum.KeyCode.A then ctrl.l = 0
+    elseif input.KeyCode == Enum.KeyCode.D then ctrl.r = 0
+    elseif input.KeyCode == Enum.KeyCode.Space then ctrl.u = 0
+    elseif input.KeyCode == Enum.KeyCode.LeftControl then ctrl.d = 0 end
+end)
 
-local bg, bv, cam, flyStepped
+local function stopFly()
+    flying = false
+    flyBtn.Text = "Fly: OFF"
+    flyBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
+    
+    if bv then bv:Destroy() bv = nil end
+    if bg then bg:Destroy() bg = nil end
+    if flyStepped then flyStepped:Disconnect() flyStepped = nil end
+    
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.PlatformStand = false
+    end
+end
 
 local function startFly()
     local char = player.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    
+    flying = true
+    flyBtn.Text = "Fly: ON"
+    flyBtn.BackgroundColor3 = Color3.fromRGB(55, 120, 55)
 
     local hrp = char.HumanoidRootPart
+    char.Humanoid.PlatformStand = true -- Tắt vật lý mặc định để ko bị rơi/vấp
+
     bv = Instance.new("BodyVelocity", hrp)
-    bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
     bv.Velocity = Vector3.new()
 
     bg = Instance.new("BodyGyro", hrp)
-    bg.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-    bg.P = 15000
+    bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bg.P = 9e4
     bg.CFrame = hrp.CFrame
 
-    cam = workspace.CurrentCamera
+    local cam = workspace.CurrentCamera
 
     flyStepped = RunService.RenderStepped:Connect(function()
-        hrp.Velocity = Vector3.new()
-        local moveDir = Vector3.new(ctrl.right - ctrl.left, ctrl.up - ctrl.down, ctrl.backward - ctrl.forward)
-        local camLook = cam.CFrame.LookVector
-        local camRight = cam.CFrame.RightVector
+        -- Tính toán hướng bay tuyệt đối theo Camera
+        local moveDir = Vector3.new()
+        if ctrl.f > 0 then moveDir = moveDir + cam.CFrame.LookVector end
+        if ctrl.b > 0 then moveDir = moveDir - cam.CFrame.LookVector end
+        if ctrl.r > 0 then moveDir = moveDir + cam.CFrame.RightVector end
+        if ctrl.l > 0 then moveDir = moveDir - cam.CFrame.RightVector end
+        if ctrl.u > 0 then moveDir = moveDir + Vector3.new(0, 1, 0) end
+        if ctrl.d > 0 then moveDir = moveDir - Vector3.new(0, 1, 0) end
 
-        local move = (camLook * moveDir.Z + camRight * moveDir.X + Vector3.new(0, moveDir.Y, 0)).Unit
-        bv.Velocity = move * flySpeed * 10
+        if moveDir.Magnitude > 0 then
+            bv.Velocity = moveDir.Unit * currentSpeed
+        else
+            bv.Velocity = Vector3.new(0, 0, 0)
+        end
+        
         bg.CFrame = cam.CFrame
     end)
 end
 
-local function stopFly()
-    if bv then bv:Destroy() bv = nil end
-    if bg then bg:Destroy() bg = nil end
-    if flyStepped then flyStepped:Disconnect() flyStepped = nil end
-end
-
 flyBtn.MouseButton1Click:Connect(function()
-    flying = not flying
-    flyBtn.Text = "Fly (" .. (flying and "ON" or "OFF") .. ")"
+    if flying then stopFly() else startFly() end
+end)
+
+-- Tắt Fly tự động khi chết
+player.CharacterAdded:Connect(function()
+    if flying then stopFly() end
+end)
